@@ -1,5 +1,5 @@
 CXX=c++
-CXXFLAGS= -std=c++17
+CXXFLAGS= -std=c++17 -Wall -O2
 INCLUDES= -I./jpeg-9e/out/include
 JPEG_LIB= -L./jpeg-9e/out/lib
 

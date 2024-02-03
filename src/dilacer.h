@@ -3,6 +3,14 @@
 
 #include <stdio.h>
 #include <memory>
+#include <thread>
+#include <map>
+#include <forward_list>
+#include <string_view>
+#include <tuple>
+#include <mutex>
+#include <condition_variable>
+
 #include "jpeglib.h"
 
 namespace ykozhoma
@@ -10,31 +18,36 @@ namespace ykozhoma
 class JpegDilacer
 {
 public:
-    static JpegDilacer& GetInstance(const char* jpegInPath, const char* jpegOutPath) {
-        static auto sInstance = std::unique_ptr<JpegDilacer>
-        (new JpegDilacer(jpegInPath, jpegOutPath));
-        return *sInstance;
-    }
+    using TSampleArray = std::map<int, std::vector<JSAMPLE>>;
+    using TImageInfo = std::tuple<std::string,
+                                  int, int, int, J_COLOR_SPACE,
+                                  TSampleArray>;
+    using TImagePath = std::tuple<std::string, std::string>;
 
     ~JpegDilacer();
 
-private:
-    JpegDilacer() = delete;
+    JpegDilacer();
     JpegDilacer(const JpegDilacer& other) = delete;
-    JpegDilacer(const char* jpegInPath, const char* jpegOutPath);
 
 public:
-    void DeInterlace();
+    void Deinterlace(std::string_view jpegInPath, std::string_view jpegOutPath);
 
 private:
-    void BlendLines(JSAMPROW currentLine, JSAMPROW prevLine, int stride);
+    void WorkerReadAndDecompress();
+    void BlendAndCompress(TImageInfo&& imageInfo);
 
+    void CompressJpeg(FILE* jpegOut, std::vector<JSAMPLE>& buffer);
+    TSampleArray DecompressJpeg(FILE* jpegIn);
 private:
-    FILE* jpegIn_;
-    FILE* jpegOut_;
+    std::thread workerThread_;
+    bool runState_ = false;
 
-    jpeg_decompress_struct dInfo_;
-    jpeg_compress_struct cInfo_;
+    std::mutex pathMtx_;
+    std::condition_variable cv_;
+    std::forward_list<TImagePath> jpegPathList_;
+
+    jpeg_decompress_struct decompressedInfo_;
+    jpeg_compress_struct compressedInfo_;
     jpeg_error_mgr jErr_;
 };
 }

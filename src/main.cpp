@@ -12,8 +12,14 @@ int main(int argc, char* argv[])
 
     try
     {
-        ykozhoma::JpegDilacer::GetInstance(argv[1], argv[2])
-        .DeInterlace();
+        ykozhoma::JpegDilacer d;
+        d.Deinterlace(argv[1], argv[2]);
+
+        //multiple out files test
+        //for(size_t i = 0; i < 10; ++i)
+        //{
+        //    d.Deinterlace(argv[1], std::string_view("out" + std::to_string(i + 1) + ".jpg"));
+        //}
     }
     catch(const std::exception& e)
     {
